@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional
+from typing import List, Optional, cast
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
@@ -37,7 +37,7 @@ async def get_prompt(doc: Document) -> str:
             {code}
             Return will be as an Update object with the pattern and replacement fields filled in.
             class Update(BaseModel):
-                pattern: str
+                pattern: str # regex
                 replacement: str
 
             Only return json of {schema}
@@ -47,46 +47,44 @@ async def get_prompt(doc: Document) -> str:
     )
 
     # Format the input for the LLM
-    return prompt_template.format(code=doc.page_content, schema=Update.model_json_schema())
-
-
+    return prompt_template.format(
+        code=doc.page_content, schema=Update.model_json_schema()
+    )
 
 
 async def generate_docstrings(state: DocStringer) -> DocStringer:
+    if not state.codes:
+        return state
+
+    if not state.updates:
+        state.updates = []
+
     for code in state.codes:
-        docstring = await llm.generate_text(code.page_content)
-        docstring = re.sub(r"\n+", "\n", docstring)
-        docstring = re.sub(r"\n", "\n\n", docstring)
-        docstring = re.sub(r"\n\n\n+", "\n\n", docstring)
-        docstring = docstring.strip()
-        docstring = docstring.replace("\n", "\n# ")
-        docstring = f"# {docstring}"
-
-
-async def print_docs(state: DocLoader) -> DocLoader:
-    if state.docs:
-        for doc in state.docs:
-            print(doc.metadata)
-
-    if state.codes:
-        for code in state.codes:
-            print(code.metadata)
-            print(code.page_content)
-            print("\n---------------\n\n")
+        prompt = await get_prompt(code)
+        update = await llm.with_structured_output(Update).ainvoke(prompt)
+        state.updates.append(cast(Update, update))
 
     return state
 
 
-doc_loader_builder = StateGraph(DocLoader, input=DocLoader, output=DocLoader)
+async def print_updates(state: DocStringer) -> DocStringer:
+    if state.updates:
+        for doc in state.updates:
+            print(doc)
+
+    return state
 
 
-doc_loader_builder.add_node("load_docs", load_docs)
-doc_loader_builder.add_node("print_docs", print_docs)
+doc_stringer_builder = StateGraph(DocStringer, input=DocStringer, output=DocStringer)
 
-doc_loader_builder.add_edge(START, "load_docs")
-doc_loader_builder.add_edge("load_docs", "print_docs")
-doc_loader_builder.add_edge("print_docs", END)
-doc_loader_graph = doc_loader_builder.compile()
-doc_loader_graph.name = "Source Code Loader"
 
-save_mermaid_graph(doc_loader_graph, "diagrams/doc_loader_graph.mermaid")
+doc_stringer_builder.add_node("generate_docstrings", generate_docstrings)
+doc_stringer_builder.add_node("print_updates", print_updates)
+
+doc_stringer_builder.add_edge(START, "generate_docstrings")
+doc_stringer_builder.add_edge("generate_docstrings", "print_updates")
+doc_stringer_builder.add_edge("print_updates", END)
+doc_stringer_graph = doc_stringer_builder.compile()
+doc_stringer_graph.name = "Source Code DocStringer"
+
+save_mermaid_graph(doc_stringer_graph, "diagrams/doc_stringer_graph.mermaid")
