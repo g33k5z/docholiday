@@ -2,11 +2,10 @@ import re
 from typing import List, Optional
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_core.documents import Document
-from langchain_text_splitters import Language, RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.graph.state import END, START, StateGraph
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from utils import save_mermaid_graph
-
 
 
 class DocLoader(BaseModel):
@@ -14,6 +13,8 @@ class DocLoader(BaseModel):
     glob: str = "**/main.py"
     docs: Optional[List[Document]] = []
     codes: Optional[List[Document]] = []
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class CustomPythonTextSplitter(RecursiveCharacterTextSplitter):
@@ -36,6 +37,7 @@ class CustomPythonTextSplitter(RecursiveCharacterTextSplitter):
             chunk_overlap=chunk_overlap,
         )
 
+    # TODO: wtf is up with overloading langchain textsplitters not working? I dont wanna handroll this shit
     def hand_rolled_splitter(self, text: str) -> List[str]:
         """Custom splitter for Python text."""
         current_start = 0

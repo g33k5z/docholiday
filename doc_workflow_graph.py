@@ -1,8 +1,9 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
+from uuid import UUID
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from langgraph.graph.state import END, START, StateGraph
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from utils import save_mermaid_graph
 from doc_loader_graph import DocLoader, doc_loader_graph
 from doc_stringer_graph import DocStringer, Update, doc_stringer_graph
@@ -16,8 +17,10 @@ class DocHoliday(BaseModel):
     glob: str = "**/main.py"
     docs: Optional[List[Document]] = []
     codes: Optional[List[Document]] = []
-    updates: Optional[List[Update]] = []
-    handled: Optional[List[Update]] = []
+    updates: Optional[Dict[UUID, Update]] = {}
+    handled: Optional[Dict[(UUID, Update)]] = {}
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 async def loader_to_stringer(state: DocLoader) -> DocStringer:
