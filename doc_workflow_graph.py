@@ -7,6 +7,7 @@ from utils import save_mermaid_graph
 from doc_loader_graph import DocLoader, doc_loader_graph
 from doc_stringer_graph import DocStringer, Update, doc_stringer_graph
 
+
 llm = ChatOpenAI(model="gpt-4o")
 
 
@@ -20,7 +21,9 @@ class DocHoliday(BaseModel):
 
 
 async def loader_to_stringer(state: DocLoader) -> DocStringer:
-    return DocStringer(docs=state.docs, codes=state.codes,dir=state.dir, glob=state.glob)
+    return DocStringer(
+        docs=state.docs, codes=state.codes, dir=state.dir, glob=state.glob
+    )
 
 
 doc_workflow_builder = StateGraph(DocHoliday, input=DocHoliday, output=DocHoliday)
