@@ -20,4 +20,4 @@ async def doc_holiday(config: dict = {"dir": "./", "glob": "**/*.py"}):
 
 if __name__ == "__main__":
     # asyncio.run(run_doc_loader_graph({"dir": "./", "glob": "**/*graph.py"}))
-    asyncio.run(doc_holiday({"dir": "./", "glob": "**/*graph.py"}))
+    asyncio.run(doc_holiday({"dir": "./", "glob": "**/*.py"}))

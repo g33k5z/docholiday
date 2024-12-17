@@ -2,11 +2,15 @@
 graph TD;
 	__start__([<p>__start__</p>]):::first
 	generate_docstrings(generate_docstrings)
+	apply_updates(apply_updates)
+	write_updated_docs(write_updated_docs)
 	print_updates(print_updates)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> generate_docstrings;
-	generate_docstrings --> print_updates;
+	apply_updates --> write_updated_docs;
+	generate_docstrings --> apply_updates;
 	print_updates --> __end__;
+	write_updated_docs --> print_updates;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0
 	classDef last fill:#bfb6fc

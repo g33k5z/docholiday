@@ -6,6 +6,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.graph.state import END, START, StateGraph
 from pydantic import BaseModel, ConfigDict
 from utils import save_mermaid_graph
+from uuid import uuid4
 
 
 class DocLoader(BaseModel):
@@ -45,7 +46,7 @@ class CustomPythonTextSplitter(RecursiveCharacterTextSplitter):
         for pattern in self.custom_python_patterns:
             for match in re.finditer(pattern, text):
                 end = match.start()
-                chunk = text[current_start:end].strip()
+                chunk = text[current_start:end]
                 if chunk:
                     splits.append(chunk)
                 current_start = end
@@ -61,6 +62,9 @@ async def load_docs(state: DocLoader) -> DocLoader:
     )
     # loader = TextLoader(__file__)
     docs = loader.load()
+
+    for doc in docs:
+        doc.metadata["uuid"] = uuid4()  
 
     python_splitter = CustomPythonTextSplitter(  # RecursiveCharacterTextSplitter(
         # language=Language.PYTHON,
@@ -78,7 +82,7 @@ async def load_docs(state: DocLoader) -> DocLoader:
             python_docs.append(Document(page_content=split, metadata=x.metadata))
 
     return DocLoader(
-        docs=python_docs, codes=python_docs, dir=state.dir, glob=state.glob
+        docs=docs, codes=python_docs, dir=state.dir, glob=state.glob
     )
 
 
@@ -89,9 +93,7 @@ async def print_docs(state: DocLoader) -> DocLoader:
 
     if state.codes:
         for code in state.codes:
-            print(code.metadata)
             print(code.page_content)
-            print("\n---------------\n\n")
 
     return state
 

@@ -5,6 +5,8 @@ graph TD;
 	doc_loader_print_docs(print_docs)
 	loader_to_stringer(loader_to_stringer)
 	doc_stringer_generate_docstrings(generate_docstrings)
+	doc_stringer_apply_updates(apply_updates)
+	doc_stringer_write_updated_docs(write_updated_docs)
 	doc_stringer_print_updates(print_updates)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> doc_loader_load_docs;
@@ -15,7 +17,9 @@ graph TD;
 	doc_loader_load_docs --> doc_loader_print_docs;
 	end
 	subgraph doc_stringer
-	doc_stringer_generate_docstrings --> doc_stringer_print_updates;
+	doc_stringer_apply_updates --> doc_stringer_write_updated_docs;
+	doc_stringer_generate_docstrings --> doc_stringer_apply_updates;
+	doc_stringer_write_updated_docs --> doc_stringer_print_updates;
 	end
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0
