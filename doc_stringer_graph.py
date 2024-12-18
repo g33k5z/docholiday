@@ -1,16 +1,16 @@
 from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 from langchain_core.documents import Document
-from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.graph.state import END, START, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
-from utils import save_mermaid_graph
+from utils import save_mermaid_graph, TemplateRenderer
 import asyncio
 import os
 from aiofiles import open as aio_open  # Asynchronous file handling
 
-llm = ChatOpenAI(model="gpt-4o-mini", timeout=15, max_retries=3)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, timeout=15, max_retries=3)
+template = TemplateRenderer()
 
 
 class Update(BaseModel):
@@ -32,26 +32,8 @@ class DocStringer(BaseModel):
 
 
 async def get_prompt(doc: Document) -> str:
-    # Create a prompt for the LLM
-    prompt_template = PromptTemplate(
-        input_variables=["code", "schema"],
-        template=(  # TODO: this prompt is grabage
-"""
-Update the class or def code with a docstring in the Google style. If only imports are present, add a module docstring. For other misc code, add a comment. 
-
-<code>{code}</code>
-
-
-Maintain the existing code structure char for char, only with added docstring.
-Do not wrap code in backticks such as ```python
-Do not add additional comment.
-"""
-        ),
-    )
-
-    # Format the input for the LLM
-    return prompt_template.format(
-        code=doc.page_content, schema=Update.model_json_schema()
+    return await template.render_prompt(
+        "generate_docstrings.jinja", code=doc.page_content
     )
 
 
